@@ -17,6 +17,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 	// Debtors
 	Route::get('/debtors', [DebtorController::class, 'index']);
+	Route::get('/debtors/{debtor}/transactions', [DebtorController::class, 'transactions']);
 	Route::post('/debtors', [DebtorController::class, 'store']);
 	Route::get('/debtors/{debtor}', [DebtorController::class, 'show']);
 	Route::put('/debtors/{debtor}', [DebtorController::class, 'update']);

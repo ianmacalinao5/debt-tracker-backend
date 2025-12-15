@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Debtor;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class DebtorController extends Controller
 {
@@ -24,6 +25,18 @@ class DebtorController extends Controller
 
 		return response()->json($debtors);
 	}
+
+	public function transactions(Debtor $debtor)
+	{
+		$this->authorizeDebtor($debtor);
+
+		return response()->json(
+			$debtor->transactions()
+				->latest()
+				->get()
+		);
+	}
+
 
 	public function store(Request $request)
 	{
@@ -70,9 +83,19 @@ class DebtorController extends Controller
 			'amount' => ['required', 'numeric', 'min:1'],
 		]);
 
-		$debtor->increment('current_balance', $data['amount']);
+		DB::transaction(function () use ($debtor, $data) {
+			$before = $debtor->current_balance;
 
-		$debtor->update(['status' => 'outstanding']);
+			$debtor->increment('current_balance', $data['amount']);
+			$debtor->update(['status' => 'outstanding']);
+
+			$debtor->transactions()->create([
+				'type' => 'add',
+				'amount' => $data['amount'],
+				'balance_before' => $before,
+				'balance_after' => $before + $data['amount'],
+			]);
+		});
 
 		return response()->json($debtor->fresh());
 	}
@@ -85,17 +108,27 @@ class DebtorController extends Controller
 			'amount' => ['required', 'numeric', 'min:1'],
 		]);
 
-		$debtor->decrement('current_balance', $data['amount']);
+		DB::transaction(function () use ($debtor, $data) {
+			$before = $debtor->current_balance;
 
-		if ($debtor->current_balance <= 0) {
+			$newBalance = max(0, $before - $data['amount']);
+
 			$debtor->update([
-				'current_balance' => 0,
-				'status' => 'cleared',
+				'current_balance' => $newBalance,
+				'status' => $newBalance === 0 ? 'cleared' : 'outstanding',
 			]);
-		}
+
+			$debtor->transactions()->create([
+				'type' => 'payment',
+				'amount' => $data['amount'],
+				'balance_before' => $before,
+				'balance_after' => $newBalance,
+			]);
+		});
 
 		return response()->json($debtor->fresh());
 	}
+
 
 	public function destroy(Debtor $debtor)
 	{

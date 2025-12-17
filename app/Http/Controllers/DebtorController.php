@@ -129,7 +129,6 @@ class DebtorController extends Controller
 		return response()->json($debtor->fresh());
 	}
 
-
 	public function destroy(Debtor $debtor)
 	{
 		$this->authorizeDebtor($debtor);

@@ -2,67 +2,40 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\LoginRequest;
+use App\Services\AuthService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
-    {
-        $request->validate([
-            'name' => 'required',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6',
-        ]);
+	public function __construct(
+		protected AuthService $authService
+	) {}
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+	public function register(RegisterRequest $request)
+	{
+		$result = $this->authService->register($request->validated());
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+		return response()->json($result);
+	}
 
-        return response()->json([
-            'token' => $token,
-            'user' => $user
-        ]);
-    }
+	public function login(LoginRequest $request)
+	{
+		$result = $this->authService->login($request->validated());
 
-    public function login(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
+		return response()->json($result);
+	}
 
-        $user = User::where('email', $request->email)->first();
+	public function user(Request $request)
+	{
+		return response()->json($request->user());
+	}
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Invalid email or password.'],
-            ]);
-        }
+	public function logout(Request $request)
+	{
+		$request->user()->currentAccessToken()->delete();
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'token' => $token,
-            'user' => $user
-        ]);
-    }
-
-    public function user(Request $request)
-    {
-        return response()->json($request->user());
-    }
-
-    public function logout(Request $request)
-    {
-        $request->user()->currentAccessToken()->delete();
-
-        return response()->json(['message' => 'Logged out']);
-    }
+		return response()->json(['message' => 'Logged out']);
+	}
 }

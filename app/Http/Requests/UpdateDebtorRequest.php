@@ -24,7 +24,7 @@ class UpdateDebtorRequest extends FormRequest
 	{
 		return [
 			'name' => ['required', 'string', 'max:255'],
-			'status' => ['required', Rule::in(['outstanding', 'cleared'])],
+			'current_balance' => ['required', 'numeric', 'min:0'],
 		];
 	}
 }

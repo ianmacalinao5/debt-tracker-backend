@@ -35,4 +35,21 @@ class AuthService
 
 		return compact('user', 'token');
 	}
+
+	public function changePassword($user, array $data): array
+	{
+		if (! Hash::check($data['current_password'], $user->password)) {
+			throw ValidationException::withMessages([
+				'current_password' => ['Current password is incorrect.'],
+			]);
+		}
+
+		$user->update([
+			'password' => Hash::make($data['new_password']),
+		]);
+
+		return [
+			'message' => 'Password changed successfully',
+		];
+	}
 }

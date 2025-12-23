@@ -14,6 +14,7 @@ Route::middleware('auth:sanctum')->group(function () {
 	// Auth
 	Route::get('/user', [AuthController::class, 'user']);
 	Route::post('/logout', [AuthController::class, 'logout']);
+	Route::post('/change-password', [AuthController::class, 'changePassword']);
 
 	// Debtors
 	Route::get('/debtors', [DebtorController::class, 'index']);

@@ -18,13 +18,28 @@ class DebtorController extends Controller
 
 	public function index(Request $request): JsonResponse
 	{
-		$status = $request->query('status', 'all');
+		$perPage = $request->query('per_page', 10);
+		$filter = $request->query('filter', 'all');
+		$search = $request->query('search', '');
+
 		$debtors = $this->debtorService->getDebtorsByStatus(
 			$request->user()->id,
-			$status
+			$filter,
+			$search,
+			$perPage
 		);
 
-		return response()->json($debtors);
+		return response()->json([
+			'data' => $debtors->items(),
+			'meta' => [
+				'current_page' => $debtors->currentPage(),
+				'last_page' => $debtors->lastPage(),
+				'per_page' => $debtors->perPage(),
+				'total' => $debtors->total(),
+				'from' => $debtors->firstItem(),
+				'to' => $debtors->lastItem(),
+			]
+		]);
 	}
 
 	public function transactions(Debtor $debtor): JsonResponse

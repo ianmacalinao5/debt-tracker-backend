@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Debtor;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class DebtorService
@@ -69,12 +70,17 @@ class DebtorService
 		$debtor->delete();
 	}
 
-	public function getDebtorsByStatus(int $userId, string $status)
-	{
+	public function getDebtorsByStatus(
+		int $userId,
+		string $status,
+		string $search = '',
+		int $perPage = 10
+	): LengthAwarePaginator {
 		return Debtor::where('user_id', $userId)
 			->when($status !== 'all', fn($q) => $q->where('status', $status))
+			->when($search, fn($q) => $q->where('name', 'like', '%' . $search . '%'))
 			->orderByDesc('updated_at')
-			->get();
+			->paginate($perPage);
 	}
 
 	public function getTransactions(Debtor $debtor)
